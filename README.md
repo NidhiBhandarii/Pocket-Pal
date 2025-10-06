@@ -11,3 +11,5 @@ Utilized Firebase Firestore as the backend service for secure, real-time data pe
 Designed a modern, accessible, and fully responsive front-end using HTML5 and Tailwind CSS for a seamless experience across desktop and mobile devices.
 
 Engineered asynchronous authentication flow using onAuthStateChanged and custom state management (isAuthReady) to prevent data operations before the database connection is secure and ready.
+
+<img width="624" height="601" alt="image" src="https://github.com/user-attachments/assets/e3abec73-0cca-4430-9c70-70bf8e97e7d0" />
