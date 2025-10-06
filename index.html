@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personal Finance Tracker</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #10B981; /* Emerald-500 */
+            --color-expense: #EF4444; /* Red-500 */
+            --color-income: #10B981; /* Emerald-500 */
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .scrollable-list {
+            max-height: 400px;
+            overflow-y: auto;
+            /* Simple scrollbar styling for aesthetics */
+            scrollbar-width: thin;
+            scrollbar-color: var(--color-primary) #f0f0f0;
+        }
+        .scrollable-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        .scrollable-list::-webkit-scrollbar-thumb {
+            background-color: var(--color-primary);
+            border-radius: 4px;
+        }
+        .scrollable-list::-webkit-scrollbar-track {
+            background-color: #f0f0f0;
+        }
+        .shadow-custom {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <div id="loading-spinner" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-white"></div>
+    </div>
+
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-custom p-6 sm:p-10 transition-all duration-300 hidden" id="app-container">
+        <header class="mb-8 border-b pb-4">
+            <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-1">
+                Pocket Pal
+            </h1>
+            <p class="text-gray-500">Your personal finance dashboard.</p>
+            <p class="text-xs text-gray-400 mt-2" id="user-id-display">User ID: Loading...</p>
+        </header>
+
+        <!-- Summary Section -->
+        <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+            <div class="p-4 bg-blue-50 rounded-lg shadow-md">
+                <p class="text-sm font-medium text-gray-500">Net Balance</p>
+                <p id="total-balance" class="text-2xl font-bold mt-1 text-blue-700">$0.00</p>
+            </div>
+            <div class="p-4 bg-green-50 rounded-lg shadow-md">
+                <p class="text-sm font-medium text-gray-500">Total Income</p>
+                <p id="total-income" class="text-2xl font-bold mt-1 text-green-600">$0.00</p>
+            </div>
+            <div class="p-4 bg-red-50 rounded-lg shadow-md">
+                <p class="text-sm font-medium text-gray-500">Total Expense</p>
+                <p id="total-expense" class="text-2xl font-bold mt-1 text-red-600">$0.00</p>
+            </div>
+        </section>
+
+        <!-- Transaction Form -->
+        <section class="mb-10 p-6 bg-gray-50 rounded-xl shadow-inner">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Add New Transaction</h2>
+            <form id="transaction-form" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                        <select id="type" required class="w-full p-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="amount" class="block text-sm font-medium text-gray-700 mb-1">Amount ($)</label>
+                        <input type="number" step="0.01" min="0.01" id="amount" required placeholder="e.g., 50.00" class="w-full p-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="description" class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                    <input type="text" id="description" required placeholder="e.g., Monthly Salary, Coffee" class="w-full p-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+
+                <div>
+                    <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                    <input type="date" id="date" required value="" class="w-full p-2 border border-gray-300 rounded-md focus:ring-emerald-500 focus:border-emerald-500">
+                </div>
+                
+                <button type="submit" id="record-btn" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-white font-semibold bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition duration-150 ease-in-out">
+                    Record Transaction
+                </button>
+                <p id="form-message" class="text-sm text-center mt-2 hidden"></p>
+            </form>
+        </section>
+
+        <!-- Transaction List -->
+        <section>
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4 border-b pb-2">Transaction History</h2>
+            <div id="transactions-list" class="scrollable-list divide-y divide-gray-200">
+                <!-- Transactions will be injected here -->
+                <p id="no-transactions-message" class="p-4 text-center text-gray-500 italic">No transactions recorded yet.</p>
+            </div>
+        </section>
+        
+    </div>
+
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getFirestore, 
+            collection, 
+            addDoc, 
+            query, 
+            onSnapshot, 
+            orderBy, 
+            deleteDoc, 
+            doc,
+            setLogLevel 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Set Firebase Log Level for debugging
+        setLogLevel('Debug');
+
+        // --- Global Firebase Configuration and Initialization ---
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth, userId = null;
+        let isAuthReady = false;
+
+        // Utility function for formatting currency
+        const formatter = new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD',
+        });
+
+        const transactionForm = document.getElementById('transaction-form');
+        const transactionsList = document.getElementById('transactions-list');
+        const totalBalanceEl = document.getElementById('total-balance');
+        const totalIncomeEl = document.getElementById('total-income');
+        const totalExpenseEl = document.getElementById('total-expense');
+        const userIdDisplayEl = document.getElementById('user-id-display');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const appContainer = document.getElementById('app-container');
+        const noTransactionsMessage = document.getElementById('no-transactions-message');
+        const formMessageEl = document.getElementById('form-message');
+        const recordButton = document.getElementById('record-btn'); // Get the record button
+
+        // Function to safely get the correct collection reference for private data
+        function getTransactionCollectionRef() {
+            if (!db || !userId) return null;
+            const collectionPath = `artifacts/${appId}/users/${userId}/transactions`;
+            
+            // Log for debugging permissions (still useful if the next error occurs)
+            console.log("Attempting to access collection path:", collectionPath);
+
+            return collection(db, collectionPath);
+        }
+
+        // Simple message display utility (replaces alert)
+        function showMessage(message, className) {
+            formMessageEl.textContent = message;
+            formMessageEl.className = `text-sm text-center mt-2 ${className}`;
+            formMessageEl.classList.remove('hidden');
+            
+            // Hide message after 4 seconds
+            setTimeout(() => {
+                formMessageEl.classList.add('hidden');
+            }, 4000);
+        }
+
+        // Helper to enable/disable the record button and change text
+        function setRecordButtonState(isEnabled, text) {
+            recordButton.disabled = !isEnabled;
+            recordButton.textContent = text;
+            if (isEnabled) {
+                recordButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            } else {
+                recordButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+
+        // 1. Initialize Firebase and Handle Authentication
+        async function initFirebase() {
+            setRecordButtonState(false, "Connecting to Database...");
+            try {
+                if (Object.keys(firebaseConfig).length === 0) {
+                    const errorMessage = "Firebase config is missing. Cannot initialize Firestore. The application needs configuration to save data.";
+                    console.error(errorMessage);
+                    loadingSpinner.classList.add('hidden');
+                    appContainer.classList.remove('hidden'); 
+                    showMessage(errorMessage, "text-red-600"); 
+                    setRecordButtonState(false, "DB Config Error");
+                    return;
+                }
+                
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Use onAuthStateChanged to ensure we have the user ID before fetching data
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplayEl.textContent = `User ID: ${userId}`;
+                    } else {
+                         // Sign in anonymously if no user is signed in
+                        const anonymousUser = await signInAnonymously(auth);
+                        userId = anonymousUser.user.uid;
+                        userIdDisplayEl.textContent = `User ID: ${userId} (Anonymous)`;
+                    }
+                    
+                    isAuthReady = true;
+                    loadingSpinner.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    setRecordButtonState(true, "Record Transaction"); // Enable button once ready
+                    listenForTransactions();
+
+                });
+
+                // Sign in with custom token if available, otherwise onAuthStateChanged handles anonymous sign-in
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    // Let onAuthStateChanged handle the initial sign in
+                }
+
+            } catch (error) {
+                console.error("Error initializing Firebase or signing in:", error);
+                loadingSpinner.classList.add('hidden');
+                appContainer.classList.remove('hidden'); 
+                showMessage(`Error: ${error.message}`, "text-red-600");
+                setRecordButtonState(false, "Connection Failed");
+            }
+        }
+
+        // 2. Add New Transaction (Modified to wait for isAuthReady)
+        async function addTransaction(e) {
+            e.preventDefault();
+
+            // Introduce a short wait loop (polling) to handle race condition
+            let attempts = 0;
+            const maxAttempts = 20; // Max 2 seconds wait (20 * 100ms)
+            
+            while (!isAuthReady && attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+
+            if (!isAuthReady || !db) {
+                console.error("Authentication not ready or DB not initialized after waiting.");
+                showMessage("Database connection failed. Please refresh the page.", "text-red-600");
+                return;
+            }
+
+            const ref = getTransactionCollectionRef();
+            if (!ref) {
+                 console.error("Could not get collection reference.");
+                 return;
+            }
+
+            const amount = parseFloat(document.getElementById('amount').value);
+            const data = {
+                type: document.getElementById('type').value,
+                amount: amount,
+                description: document.getElementById('description').value,
+                date: document.getElementById('date').value,
+                timestamp: Date.now()
+            };
+            
+            setRecordButtonState(false, "Recording...");
+
+            try {
+                await addDoc(ref, data);
+                transactionForm.reset();
+                document.getElementById('date').valueAsDate = new Date(); 
+                showMessage("Transaction recorded successfully!", "text-green-600");
+
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                showMessage(`Error recording: ${error.message}`, "text-red-600");
+            } finally {
+                setRecordButtonState(true, "Record Transaction");
+            }
+        }
+
+        // 3. Listen for Transactions in Real-Time
+        function listenForTransactions() {
+            if (!isAuthReady || !db) {
+                console.error("Authentication not ready or DB not initialized for listener.");
+                return;
+            }
+            
+            const ref = getTransactionCollectionRef();
+            if (!ref) return;
+
+            // Use onSnapshot to get real-time updates.
+            // NOTE: We rely on the timestamp for sorting, but we will sort in memory to avoid index issues.
+            const q = query(ref); 
+
+            onSnapshot(q, (snapshot) => {
+                const transactions = [];
+                snapshot.forEach((doc) => {
+                    // Add Firestore document ID to the data object
+                    transactions.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Sort transactions by timestamp (most recent first) in memory
+                transactions.sort((a, b) => b.timestamp - a.timestamp);
+                
+                updateDashboard(transactions);
+                renderTransactions(transactions);
+
+            }, (error) => {
+                // Display user-friendly permission error
+                if (error.code === 'permission-denied') {
+                    console.error("Error listening to transactions: Permission Denied. Check Firestore security rules.");
+                    showMessage("Error: Cannot load data. Please check your database permissions.", "text-red-600");
+                } else {
+                    console.error("Error listening to transactions: ", error);
+                }
+            });
+        }
+
+        // 4. Update Summary Dashboard
+        function updateDashboard(transactions) {
+            let totalIncome = 0;
+            let totalExpense = 0;
+
+            transactions.forEach(t => {
+                const amount = t.amount || 0;
+                if (t.type === 'income') {
+                    totalIncome += amount;
+                } else if (t.type === 'expense') {
+                    totalExpense += amount;
+                }
+            });
+
+            const totalBalance = totalIncome - totalExpense;
+
+            totalBalanceEl.textContent = formatter.format(totalBalance);
+            totalIncomeEl.textContent = formatter.format(totalIncome);
+            totalExpenseEl.textContent = formatter.format(totalExpense);
+            
+            // Apply color to balance based on value
+            totalBalanceEl.classList.remove('text-red-700', 'text-green-700', 'text-blue-700');
+            if (totalBalance < 0) {
+                totalBalanceEl.classList.add('text-red-700');
+            } else if (totalBalance > 0) {
+                totalBalanceEl.classList.add('text-green-700');
+            } else {
+                totalBalanceEl.classList.add('text-blue-700');
+            }
+        }
+
+        // 5. Render Transaction List
+        function renderTransactions(transactions) {
+            transactionsList.innerHTML = ''; // Clear existing list
+
+            if (transactions.length === 0) {
+                noTransactionsMessage.classList.remove('hidden');
+                transactionsList.appendChild(noTransactionsMessage);
+                return;
+            } else {
+                noTransactionsMessage.classList.add('hidden');
+            }
+
+            transactions.forEach(t => {
+                const isExpense = t.type === 'expense';
+                const sign = isExpense ? '-' : '+';
+                const colorClass = isExpense ? 'text-red-600' : 'text-green-600';
+                const icon = isExpense ? 
+                    '<svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path></svg>' :
+                    '<svg class="w-5 h-5 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>';
+                
+                const listItem = document.createElement('div');
+                listItem.className = 'flex items-center justify-between p-3 sm:p-4 hover:bg-gray-50 transition duration-150 ease-in-out border-b';
+                listItem.innerHTML = `
+                    <div class="flex items-start">
+                        ${icon}
+                        <div>
+                            <p class="font-semibold text-gray-800">${t.description}</p>
+                            <p class="text-xs text-gray-500 mt-0.5">${t.date}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        <p class="font-bold ${colorClass} text-lg sm:text-xl">
+                            ${sign}${formatter.format(t.amount)}
+                        </p>
+                        <button data-id="${t.id}" class="delete-btn text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 rounded-full hover:bg-red-100" title="Delete Transaction">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+                transactionsList.appendChild(listItem);
+            });
+
+            // Add event listeners to newly rendered delete buttons
+            document.querySelectorAll('.delete-btn').forEach(button => {
+                button.addEventListener('click', deleteTransaction);
+            });
+        }
+        
+        // 6. Delete Transaction
+        async function deleteTransaction(e) {
+            const transactionId = e.currentTarget.dataset.id;
+            if (!transactionId || !db) return;
+            
+            const ref = getTransactionCollectionRef();
+            if (!ref) return;
+
+            try {
+                // Construct the document reference
+                const docRef = doc(ref, transactionId);
+                await deleteDoc(docRef);
+                showMessage("Transaction deleted.", "text-gray-500");
+            } catch (error) {
+                console.error("Error deleting document: ", error);
+                showMessage(`Error deleting: ${error.message}`, "text-red-600");
+            }
+        }
+
+        // Event listener for form submission
+        transactionForm.addEventListener('submit', addTransaction);
+        
+        // Set the default date input value to today
+        document.getElementById('date').valueAsDate = new Date();
+
+        // Start the application
+        initFirebase();
+    </script>
+</body>
+</html>
